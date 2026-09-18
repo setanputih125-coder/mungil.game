@@ -22,8 +22,7 @@
             position: fixed;
             inset: 0;
             width: 100%;
-            height: 100%;
-            height: 100dvh;
+            height: var(--app-height, 100dvh);
         }
         .font-orbitron {
             font-family: 'Orbitron', sans-serif;
@@ -42,10 +41,30 @@
             backdrop-filter: blur(12px);
             border: 1px solid rgba(0, 243, 255, 0.2);
         }
+        .overlay-scroll {
+            align-items: flex-start;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            padding-top: max(1rem, env(safe-area-inset-top));
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            padding-left: max(1rem, env(safe-area-inset-left));
+            padding-right: max(1rem, env(safe-area-inset-right));
+        }
+        .overlay-scroll > * {
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+        #hud {
+            padding-top: max(1rem, env(safe-area-inset-top));
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            padding-left: max(1rem, env(safe-area-inset-left));
+            padding-right: max(1rem, env(safe-area-inset-right));
+        }
         canvas {
             display: block;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             background: radial-gradient(circle at center, #0a0e27 0%, #03040c 100%);
         }
         
@@ -172,7 +191,7 @@
             
             /* ── Menu / Upgrade / GameOver compact ── */
             #menu-screen, #upgrade-screen, #gameover-screen {
-                padding: 8px !important;
+                padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)) !important;
             }
             #menu-screen .max-w-md {
                 max-width: 500px !important;
@@ -228,7 +247,7 @@
         }
     </style>
 </head>
-<body class="relative w-screen h-screen overflow-hidden">
+<body class="relative overflow-hidden">
 
     <!-- HUD Layer -->
     <div id="hud" class="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-4 hidden">
@@ -263,11 +282,6 @@
             <div id="rank-badge" class="glass-panel px-4 py-2 rounded-xl border border-amber-500/40 text-center min-w-[80px] hidden">
                 <div class="text-[10px] uppercase text-amber-500 tracking-widest">RANK</div>
                 <div id="rank-value" class="text-xl font-bold font-orbitron text-amber-400">E</div>
-            </div>
-            
-            <div class="glass-panel px-4 py-2 rounded-xl border border-pink-500/40 text-center min-w-[120px]">
-                <div class="text-[10px] uppercase text-pink-300 tracking-widest">Waktu</div>
-                <div id="timer-text" class="text-xl font-bold font-orbitron text-pink-400">00:00</div>
             </div>
             
             <div class="glass-panel px-4 py-2 rounded-xl border border-pink-500/40 text-center min-w-[120px]">
@@ -311,7 +325,7 @@
     </div>
 
     <!-- Main Menu Screen -->
-    <div id="menu-screen" class="absolute inset-0 z-30 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div id="menu-screen" class="absolute inset-0 z-30 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overlay-scroll">
         <div class="glass-panel max-w-md w-full rounded-2xl p-8 border border-cyan-500/50 text-center flex flex-col items-center gap-6 shadow-[0_0_40px_rgba(0,243,255,0.2)]">
             <div>
                 <h1 class="text-4xl md:text-5xl font-extrabold font-orbitron tracking-wider neon-text-cyan text-cyan-400 mb-2">NEON CYBER</h1>
@@ -340,7 +354,7 @@
     </div>
 
     <!-- Upgrade Screen (Level Up Modal) -->
-    <div id="upgrade-screen" class="absolute inset-0 z-40 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 hidden">
+    <div id="upgrade-screen" class="absolute inset-0 z-40 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 overlay-scroll hidden">
         <div class="max-w-xl w-full flex flex-col gap-4 text-center">
             <h2 class="text-3xl font-extrabold font-orbitron text-amber-400 tracking-wider animate-pulse">LEVEL UP!</h2>
             <p class="text-gray-300 text-sm">Pilih 1 Enhancement Module untuk senjata & karaktermu:</p>
@@ -352,7 +366,7 @@
     </div>
 
     <!-- Game Over Screen -->
-    <div id="gameover-screen" class="absolute inset-0 z-40 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 hidden">
+    <div id="gameover-screen" class="absolute inset-0 z-40 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overlay-scroll hidden">
         <div class="glass-panel max-w-md w-full rounded-2xl p-8 border border-red-500/50 text-center flex flex-col items-center gap-6">
             <h2 class="text-4xl font-extrabold font-orbitron text-red-500 neon-text-magenta">SYSTEM FAILURE</h2>
             <p class="text-gray-400 text-sm">Karaktermu kewalahan menghadapi invasi drone.</p>
@@ -373,6 +387,19 @@
     <canvas id="gameCanvas"></canvas>
 
     <script>
+        function syncAppHeight() {
+            const vv = window.visualViewport;
+            const h = vv ? vv.height : window.innerHeight;
+            document.documentElement.style.setProperty('--app-height', h + 'px');
+        }
+        syncAppHeight();
+        window.addEventListener('resize', syncAppHeight);
+        window.addEventListener('orientationchange', () => setTimeout(syncAppHeight, 300));
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', syncAppHeight);
+            window.visualViewport.addEventListener('scroll', syncAppHeight);
+        }
+
         // Web Audio Synthesizer for Retro Arcade Sounds
         const SoundEngine = {
             ctx: null,
@@ -724,8 +751,9 @@
             const scaleX = isLandscape ? 0.85 : 1.0;
             const scaleY = isLandscape ? 0.85 : 1.0;
             
-            canvas.width = Math.floor(window.innerWidth * scaleX);
-            canvas.height = Math.floor(window.innerHeight * scaleY);
+            syncAppHeight();
+            canvas.width = Math.floor((canvas.clientWidth || window.innerWidth) * scaleX);
+            canvas.height = Math.floor((canvas.clientHeight || window.innerHeight) * scaleY);
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
